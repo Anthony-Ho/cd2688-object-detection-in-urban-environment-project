@@ -128,3 +128,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+1_model_training/set_env.sh
