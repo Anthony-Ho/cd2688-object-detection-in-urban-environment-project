@@ -1,0 +1,45 @@
+FROM rocm/tensorflow:latest
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install apt dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    gpg-agent \
+    python3-cairocffi \
+    protobuf-compiler \
+    python3-pil \
+    python3-lxml \
+    python3-tk \
+    wget
+
+# Install python dependencies
+RUN pip install --upgrade pip && \
+    pip install \
+    cython \
+    contextlib2 \
+    pillow \
+    lxml \
+    jupyter \
+    matplotlib
+
+# Copy the models directory
+COPY models /opt/models
+
+# Compile protobuf configs
+WORKDIR /opt/models/research
+RUN protoc object_detection/protos/*.proto --python_out=.
+
+# Install the object detection api
+RUN cp object_detection/packages/tf2/setup.py .
+RUN sed -i '/tensorflow/d' setup.py
+RUN sed -i '/tf-models-official/d' setup.py
+RUN python -m pip install .
+
+ENV PYTHONPATH=$PYTHONPATH:/opt/models:/opt/models/research:/opt/models/research/slim
+
+# Override GFX version for RDNA3.5 (gfx1151) compatibility
+ENV HSA_OVERRIDE_GFX_VERSION=11.0.0
+
+# Set the working directory
+WORKDIR /opt/ml/code
