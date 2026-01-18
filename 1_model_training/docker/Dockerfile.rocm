@@ -34,9 +34,37 @@ RUN protoc object_detection/protos/*.proto --python_out=.
 RUN cp object_detection/packages/tf2/setup.py .
 RUN sed -i '/tensorflow/d' setup.py
 RUN sed -i '/tf-models-official/d' setup.py
+
+# Fix dependencies and patch OD API for TensorFlow 2.16+ compatibility
+RUN pip install --no-deps --pre tensorflow-estimator tf-keras tensorflow-io
+RUN sed -i 's/from tensorflow.compat.v1 import estimator as tf_estimator/import tensorflow_estimator as tf_estimator/g' object_detection/inputs.py
+RUN sed -i 's/from tensorflow.compat.v1 import estimator as tf_estimator/import tensorflow_estimator as tf_estimator/g' object_detection/model_lib_v2.py
+RUN sed -i 's/tf.keras.layers.experimental.SyncBatchNormalization/tf.keras.layers.BatchNormalization/g' object_detection/core/freezable_sync_batch_norm.py
+
+# Patch tensorflow_estimator to fix import error with recent TF versions
+RUN sed -i 's/from tensorflow.python.distribute import estimator_training as distribute_coordinator_training/distribute_coordinator_training = None/g' /usr/local/lib/python3.12/site-packages/tensorflow_estimator/python/estimator/estimator.py
+RUN sed -i 's/from tensorflow.python.distribute import estimator_training as distribute_coordinator_training/distribute_coordinator_training = None/g' /usr/local/lib/python3.12/site-packages/tensorflow_estimator/python/estimator/run_config.py
+RUN echo "class estimator_export(object):" > /usr/local/lib/python3.12/site-packages/tensorflow_estimator/python/estimator/estimator_export.py && \
+    echo "  def __init__(self, *args, **kwargs): pass" >> /usr/local/lib/python3.12/site-packages/tensorflow_estimator/python/estimator/estimator_export.py && \
+    echo "  def __call__(self, func): return func" >> /usr/local/lib/python3.12/site-packages/tensorflow_estimator/python/estimator/estimator_export.py
+
+# Create dummy tpu_embedding module to satisfy tensorflow_estimator imports since we are not using TPU
+RUN echo "class AdagradParameters: pass" > /usr/local/lib/python3.12/site-packages/tensorflow/python/tpu/tpu_embedding.py && \
+    echo "class AdamParameters: pass" >> /usr/local/lib/python3.12/site-packages/tensorflow/python/tpu/tpu_embedding.py && \
+    echo "class StochasticGradientDescentParameters: pass" >> /usr/local/lib/python3.12/site-packages/tensorflow/python/tpu/tpu_embedding.py && \
+    echo "class FtrlParameters: pass" >> /usr/local/lib/python3.12/site-packages/tensorflow/python/tpu/tpu_embedding.py && \
+    echo "class MomentumParameters: pass" >> /usr/local/lib/python3.12/site-packages/tensorflow/python/tpu/tpu_embedding.py && \
+    echo "class RMSPropParameters: pass" >> /usr/local/lib/python3.12/site-packages/tensorflow/python/tpu/tpu_embedding.py && \
+    echo "class ProximalAdagradParameters: pass" >> /usr/local/lib/python3.12/site-packages/tensorflow/python/tpu/tpu_embedding.py && \
+    echo "class ProximalYogiParameters: pass" >> /usr/local/lib/python3.12/site-packages/tensorflow/python/tpu/tpu_embedding.py && \
+    echo "class EmbeddingConfigSpec: pass" >> /usr/local/lib/python3.12/site-packages/tensorflow/python/tpu/tpu_embedding.py
+RUN echo "class SessionSupport: pass" > /usr/local/lib/python3.12/site-packages/tensorflow/python/tpu/session_support.py
+RUN echo "class TPUEmbeddingGradient: pass" > /usr/local/lib/python3.12/site-packages/tensorflow/python/tpu/tpu_embedding_gradient.py
+
 RUN python -m pip install .
 
 ENV PYTHONPATH=$PYTHONPATH:/opt/models:/opt/models/research:/opt/models/research/slim
+ENV TF_USE_LEGACY_KERAS=1
 
 # Override GFX version for RDNA3.5 (gfx1151) compatibility
 ENV HSA_OVERRIDE_GFX_VERSION=11.0.0
