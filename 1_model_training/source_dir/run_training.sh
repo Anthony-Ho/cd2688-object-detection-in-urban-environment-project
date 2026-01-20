@@ -5,7 +5,19 @@ PIPELINE_CONFIG_PATH=${SM_HP_PIPELINE_CONFIG_PATH}
 NUM_TRAIN_STEPS=${SM_HP_NUM_TRAIN_STEPS}
 SAMPLE_1_OF_N_EVAL_EXAMPLES=${SM_HP_SAMPLE_1_OF_N_EVAL_EXAMPLES}
 
-if [ ${SM_NUM_GPUS} > 0 ]
+# Parse command line arguments to support local execution
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --model_dir) MODEL_DIR="$2"; shift ;;
+        --pipeline_config_path) PIPELINE_CONFIG_PATH="$2"; shift ;;
+        --num_train_steps) NUM_TRAIN_STEPS="$2"; shift ;;
+        --sample_1_of_n_eval_examples) SAMPLE_1_OF_N_EVAL_EXAMPLES="$2"; shift ;;
+        *) echo "Unknown parameter passed: $1"; shift ;;
+    esac
+    shift
+done
+
+if [ "${SM_NUM_GPUS:-0}" -gt 0 ]
 then
    NUM_WORKERS=${SM_NUM_GPUS}
 else

@@ -21,7 +21,8 @@ RUN pip install --upgrade pip && \
     pillow \
     lxml \
     jupyter \
-    matplotlib
+    matplotlib \
+    gin-config
 
 # Copy the models directory
 COPY models /opt/models
@@ -36,14 +37,21 @@ RUN sed -i '/tensorflow/d' setup.py
 RUN sed -i '/tf-models-official/d' setup.py
 
 # Fix dependencies and patch OD API for TensorFlow 2.16+ compatibility
-RUN pip install --no-deps --pre tensorflow-estimator tf-keras tensorflow-io
+RUN pip install --no-deps --pre tensorflow-estimator tf-keras tensorflow-io tf-slim
 RUN sed -i 's/from tensorflow.compat.v1 import estimator as tf_estimator/import tensorflow_estimator as tf_estimator/g' object_detection/inputs.py
 RUN sed -i 's/from tensorflow.compat.v1 import estimator as tf_estimator/import tensorflow_estimator as tf_estimator/g' object_detection/model_lib_v2.py
+RUN sed -i 's/from tensorflow.compat.v1 import estimator as tf_estimator/import tensorflow_estimator as tf_estimator/g' object_detection/model_lib.py
 RUN sed -i 's/tf.keras.layers.experimental.SyncBatchNormalization/tf.keras.layers.BatchNormalization/g' object_detection/core/freezable_sync_batch_norm.py
+
+# Patch tf-slim to fix AttributeError: module 'tensorflow.python.ops.control_flow_ops' has no attribute 'case'
+RUN sed -i '/class TFExampleDecoder/i import tensorflow as tf' /usr/local/lib/python3.12/site-packages/tf_slim/data/tfexample_decoder.py
+RUN sed -i 's/control_flow_ops.case/tf.case/g' /usr/local/lib/python3.12/site-packages/tf_slim/data/tfexample_decoder.py
+RUN sed -i 's/control_flow_ops.cond/tf.cond/g' /usr/local/lib/python3.12/site-packages/tf_slim/data/tfexample_decoder.py
 
 # Patch tensorflow_estimator to fix import error with recent TF versions
 RUN sed -i 's/from tensorflow.python.distribute import estimator_training as distribute_coordinator_training/distribute_coordinator_training = None/g' /usr/local/lib/python3.12/site-packages/tensorflow_estimator/python/estimator/estimator.py
 RUN sed -i 's/from tensorflow.python.distribute import estimator_training as distribute_coordinator_training/distribute_coordinator_training = None/g' /usr/local/lib/python3.12/site-packages/tensorflow_estimator/python/estimator/run_config.py
+RUN sed -i 's/from tensorflow.python.distribute import estimator_training as distribute_coordinator_training/distribute_coordinator_training = None/g' /usr/local/lib/python3.12/site-packages/tensorflow_estimator/python/estimator/training.py
 RUN echo "class estimator_export(object):" > /usr/local/lib/python3.12/site-packages/tensorflow_estimator/python/estimator/estimator_export.py && \
     echo "  def __init__(self, *args, **kwargs): pass" >> /usr/local/lib/python3.12/site-packages/tensorflow_estimator/python/estimator/estimator_export.py && \
     echo "  def __call__(self, func): return func" >> /usr/local/lib/python3.12/site-packages/tensorflow_estimator/python/estimator/estimator_export.py
