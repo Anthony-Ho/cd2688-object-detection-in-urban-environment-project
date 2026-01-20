@@ -1,0 +1,80 @@
+FROM tensorflow/tensorflow:latest-gpu
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install apt dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    gpg-agent \
+    python3-cairocffi \
+    protobuf-compiler \
+    python3-pil \
+    python3-lxml \
+    python3-tk \
+    wget
+
+# Install python dependencies
+RUN pip install --upgrade pip && \
+    pip install \
+    cython \
+    contextlib2 \
+    pillow \
+    lxml \
+    jupyter \
+    matplotlib \
+    gin-config
+
+# Copy the models directory
+COPY models /opt/models
+
+# Compile protobuf configs
+WORKDIR /opt/models/research
+RUN protoc object_detection/protos/*.proto --python_out=.
+
+# Install the object detection api
+RUN cp object_detection/packages/tf2/setup.py .
+RUN sed -i '/tensorflow/d' setup.py
+RUN sed -i '/tf-models-official/d' setup.py
+
+# Fix dependencies and patch OD API for TensorFlow 2.16+ compatibility
+RUN pip install --no-deps --pre tensorflow-estimator tf-keras tensorflow-io tf-slim
+RUN sed -i 's/from tensorflow.compat.v1 import estimator as tf_estimator/import tensorflow_estimator as tf_estimator/g' object_detection/inputs.py
+RUN sed -i 's/from tensorflow.compat.v1 import estimator as tf_estimator/import tensorflow_estimator as tf_estimator/g' object_detection/model_lib_v2.py
+RUN sed -i 's/from tensorflow.compat.v1 import estimator as tf_estimator/import tensorflow_estimator as tf_estimator/g' object_detection/model_lib.py
+RUN sed -i 's/tf.keras.layers.experimental.SyncBatchNormalization/tf.keras.layers.BatchNormalization/g' object_detection/core/freezable_sync_batch_norm.py
+
+# Patch tf-slim and tensorflow_estimator
+# We use a shell snippet to find the site-packages path dynamically to be robust across TF versions
+RUN SP_PATH=$(python3 -c "import site; print([p for p in site.getsitepackages() if 'site-packages' in p][0])") && \
+    # Patch tf-slim
+    sed -i '/class TFExampleDecoder/i import tensorflow as tf' "${SP_PATH}/tf_slim/data/tfexample_decoder.py" && \
+    sed -i 's/control_flow_ops.case/tf.case/g' "${SP_PATH}/tf_slim/data/tfexample_decoder.py" && \
+    sed -i 's/control_flow_ops.cond/tf.cond/g' "${SP_PATH}/tf_slim/data/tfexample_decoder.py" && \
+    # Patch tensorflow_estimator
+    sed -i 's/from tensorflow.python.distribute import estimator_training as distribute_coordinator_training/distribute_coordinator_training = None/g' "${SP_PATH}/tensorflow_estimator/python/estimator/estimator.py" && \
+    sed -i 's/from tensorflow.python.distribute import estimator_training as distribute_coordinator_training/distribute_coordinator_training = None/g' "${SP_PATH}/tensorflow_estimator/python/estimator/run_config.py" && \
+    sed -i 's/from tensorflow.python.distribute import estimator_training as distribute_coordinator_training/distribute_coordinator_training = None/g' "${SP_PATH}/tensorflow_estimator/python/estimator/training.py" && \
+    # Fix estimator_export
+    echo "class estimator_export(object):" > "${SP_PATH}/tensorflow_estimator/python/estimator/estimator_export.py" && \
+    echo "  def __init__(self, *args, **kwargs): pass" >> "${SP_PATH}/tensorflow_estimator/python/estimator/estimator_export.py" && \
+    echo "  def __call__(self, func): return func" >> "${SP_PATH}/tensorflow_estimator/python/estimator/estimator_export.py" && \
+    # Create dummy tpu_embedding module
+    echo "class AdagradParameters: pass" > "${SP_PATH}/tensorflow/python/tpu/tpu_embedding.py" && \
+    echo "class AdamParameters: pass" >> "${SP_PATH}/tensorflow/python/tpu/tpu_embedding.py" && \
+    echo "class StochasticGradientDescentParameters: pass" >> "${SP_PATH}/tensorflow/python/tpu/tpu_embedding.py" && \
+    echo "class FtrlParameters: pass" >> "${SP_PATH}/tensorflow/python/tpu/tpu_embedding.py" && \
+    echo "class MomentumParameters: pass" >> "${SP_PATH}/tensorflow/python/tpu/tpu_embedding.py" && \
+    echo "class RMSPropParameters: pass" >> "${SP_PATH}/tensorflow/python/tpu/tpu_embedding.py" && \
+    echo "class ProximalAdagradParameters: pass" >> "${SP_PATH}/tensorflow/python/tpu/tpu_embedding.py" && \
+    echo "class ProximalYogiParameters: pass" >> "${SP_PATH}/tensorflow/python/tpu/tpu_embedding.py" && \
+    echo "class EmbeddingConfigSpec: pass" >> "${SP_PATH}/tensorflow/python/tpu/tpu_embedding.py" && \
+    echo "class SessionSupport: pass" > "${SP_PATH}/tensorflow/python/tpu/session_support.py" && \
+    echo "class TPUEmbeddingGradient: pass" > "${SP_PATH}/tensorflow/python/tpu/tpu_embedding_gradient.py"
+
+RUN python -m pip install .
+
+ENV PYTHONPATH=$PYTHONPATH:/opt/models:/opt/models/research:/opt/models/research/slim
+ENV TF_USE_LEGACY_KERAS=1
+
+# Set the working directory
+WORKDIR /opt/ml/code

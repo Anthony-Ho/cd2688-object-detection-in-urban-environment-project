@@ -132,3 +132,5 @@ dmypy.json
 
 # Ignore training data
 data/
+aws/
+source_dir/checkpoint/
