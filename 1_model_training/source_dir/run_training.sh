@@ -17,6 +17,34 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+# Resolve fine_tune checkpoint from pipeline.config and verify it exists
+FINE_TUNE_CKPT=$(python - "${PIPELINE_CONFIG_PATH:-pipeline.config}" <<'PY'
+import os, re, sys
+path = sys.argv[1]
+if not os.path.exists(path):
+    print("")
+    sys.exit(0)
+with open(path) as f:
+    for line in f:
+        m = re.match(r'\s*fine_tune_checkpoint:\s*"([^"]+)"', line)
+        if m:
+            ckpt = m.group(1)
+            if not os.path.isabs(ckpt):
+                ckpt = os.path.normpath(os.path.join(os.path.dirname(path), ckpt))
+            print(ckpt)
+            sys.exit(0)
+print("")
+PY
+)
+
+if [ -n "${FINE_TUNE_CKPT}" ]; then
+  if [ ! -f "${FINE_TUNE_CKPT}.index" ]; then
+    echo "ERROR: fine_tune_checkpoint not found: ${FINE_TUNE_CKPT}(.index/.data)" >&2
+    exit 1
+  fi
+  echo "Using fine_tune_checkpoint: ${FINE_TUNE_CKPT}"
+fi
+
 if [ "${SM_NUM_GPUS:-0}" -gt 0 ]
 then
    NUM_WORKERS=${SM_NUM_GPUS}
@@ -41,9 +69,16 @@ python model_main_tf2.py \
     --eval_timeout 10
 
 echo "==EXPORTING THE MODEL=="
+EXPORT_BASE_DIR="${SM_MODEL_DIR:-${MODEL_DIR}}"
+EXPORT_DIR="${EXPORT_BASE_DIR}/exported"
 python exporter_main_v2.py \
     --trained_checkpoint_dir ${MODEL_DIR} \
     --pipeline_config_path ${PIPELINE_CONFIG_PATH} \
-    --output_directory /tmp/exported
-    
-mv /tmp/exported/saved_model /opt/ml/model/1
+    --output_directory ${EXPORT_DIR}
+
+if [ -n "${SM_MODEL_DIR}" ]; then
+  mkdir -p "${SM_MODEL_DIR}/1"
+  mv "${EXPORT_DIR}/saved_model" "${SM_MODEL_DIR}/1"
+else
+  mv "${EXPORT_DIR}/saved_model" "${MODEL_DIR}/saved_model"
+fi

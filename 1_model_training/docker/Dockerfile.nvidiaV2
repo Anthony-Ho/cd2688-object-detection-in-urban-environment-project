@@ -1,0 +1,52 @@
+FROM tensorflow/tensorflow:2.15.0-gpu
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Install apt dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    gpg-agent \
+    protobuf-compiler \
+    python3-lxml \
+    python3-tk \
+    libgl1 \
+    wget \
+    libjpeg-dev \
+    libpng-dev \
+    libtiff-dev \
+    zlib1g-dev \
+    libfreetype6-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install python dependencies
+RUN pip install --upgrade pip && \
+    pip install cython
+
+# Copy models directory
+COPY models /opt/models
+
+# Compile protobufs and install object_detection
+WORKDIR /opt/models/research
+RUN protoc object_detection/protos/*.proto --python_out=.
+RUN cp object_detection/packages/tf2/setup.py .
+RUN sed -i '/tensorflow/d' setup.py
+RUN sed -i '/tf-models-official/d' setup.py
+RUN python -m pip install .
+
+# Install additional dependencies
+# numpy<2 is crucial for TF 2.x compatibility
+RUN pip install tf-slim pandas matplotlib sagemaker-training opencv-python-headless "numpy<2" "protobuf==3.20.3" tensorflow-io gin-config
+# Install tf-keras without pulling a mismatched TensorFlow build
+RUN pip install --no-deps "tf-keras==2.15.0"
+# Patch tf-slim for TF 2.15+ (control_flow_ops.case/cond moved)
+RUN SP_PATH=$(python3 -c "import site; print([p for p in site.getsitepackages() if 'site-packages' in p or 'dist-packages' in p][0])") && \
+    sed -i '/class TFExampleDecoder/i import tensorflow as tf' "${SP_PATH}/tf_slim/data/tfexample_decoder.py" && \
+    sed -i 's/control_flow_ops.case/tf.case/g' "${SP_PATH}/tf_slim/data/tfexample_decoder.py" && \
+    sed -i 's/control_flow_ops.cond/tf.cond/g' "${SP_PATH}/tf_slim/data/tfexample_decoder.py"
+
+ENV PYTHONPATH=${PYTHONPATH:-}:/opt/models:/opt/models/research:/opt/models/research/slim
+ENV TF_USE_LEGACY_KERAS=1
+
+WORKDIR /opt/ml/code
+
+CMD ["/bin/bash"]

@@ -134,3 +134,5 @@ dmypy.json
 data/
 aws/
 source_dir/checkpoint/
+local_training_output/
+1_model_training/local_training_output/
