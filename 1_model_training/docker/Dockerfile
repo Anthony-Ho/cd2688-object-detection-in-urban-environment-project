@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-dev \
     wget
 
+RUN pip install 'protobuf<=3.20.1' --force-reinstall
+ENV PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
 # Copy this version of the model garden into the image
 COPY models/research/object_detection /home/tensorflow/models/research/object_detection 
 
