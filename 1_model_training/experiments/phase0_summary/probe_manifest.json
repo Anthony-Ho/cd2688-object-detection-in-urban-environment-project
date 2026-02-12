@@ -1,0 +1,12 @@
+{
+  "d1_baseline_640": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_baseline_640.config",
+  "d1_res_512": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_res_512.config",
+  "d1_res_768": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_res_768.config",
+  "d1_anchor_dense": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_anchor_dense.config",
+  "d1_anchor_scale_2p5": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_anchor_scale_2p5.config",
+  "d1_anchor_scale_2p0_dense": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_anchor_scale_2p0_dense.config",
+  "d1_anchor_wide_ar": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_anchor_wide_ar.config",
+  "d1_aug_light": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_aug_light.config",
+  "d1_aug_mild_color": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_aug_mild_color.config",
+  "d1_focal_rebalanced": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_focal_rebalanced.config"
+}

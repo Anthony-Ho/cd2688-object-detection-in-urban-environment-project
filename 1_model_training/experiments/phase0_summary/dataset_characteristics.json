@@ -1,0 +1,44 @@
+{
+  "train": {
+    "tfrecord_files": 84,
+    "images": 1679,
+    "boxes": 36136,
+    "boxes_per_image_mean": 21.522334723049433,
+    "boxes_per_image_median": 17.0,
+    "boxes_per_image_q90": 45.0,
+    "bbox_area_norm_q10": 8.18074393826862e-05,
+    "bbox_area_norm_q50": 0.0006388737284055424,
+    "bbox_area_norm_q90": 0.008481783571316015,
+    "class_counts": {
+      "vehicle": 27907,
+      "pedestrian": 8015,
+      "cyclist": 214
+    },
+    "size_proxy": {
+      "small_fraction": 0.760598848793447,
+      "medium_fraction": 0.19387868054018154,
+      "large_fraction": 0.04552247066637149
+    }
+  },
+  "val": {
+    "tfrecord_files": 13,
+    "images": 258,
+    "boxes": 8119,
+    "boxes_per_image_mean": 31.468992248062015,
+    "boxes_per_image_median": 30.0,
+    "boxes_per_image_q90": 59.0,
+    "bbox_area_norm_q10": 6.492587628414981e-05,
+    "bbox_area_norm_q50": 0.0004130081392554885,
+    "bbox_area_norm_q90": 0.005351990423696051,
+    "class_counts": {
+      "vehicle": 5963,
+      "pedestrian": 2114,
+      "cyclist": 42
+    },
+    "size_proxy": {
+      "small_fraction": 0.8230077595763025,
+      "medium_fraction": 0.14435275280206922,
+      "large_fraction": 0.03263948762162828
+    }
+  }
+}
