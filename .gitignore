@@ -137,3 +137,6 @@ source_dir/checkpoint/
 local_training_output/
 1_model_training/local_training_output/
 pipeline.config
+
+1_model_training/experiments/phase0_runs/
+1_model_training/source_dir/pipeline.phase0_*.steps_*.config
