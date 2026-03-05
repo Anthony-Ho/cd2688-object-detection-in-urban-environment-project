@@ -1,0 +1,9 @@
+{
+  "families": [
+    "efficientdet",
+    "ssd_retinanet_style"
+  ],
+  "rules_triggered": {
+    "efficientdet": "always_include_phase0_anchor"
+  }
+}
