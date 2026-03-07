@@ -1,0 +1,6 @@
+{
+  "eff_d1_res768": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_res_768.config",
+  "eff_d1_anchor_scale2p0_dense": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase0_d1_anchor_scale_2p0_dense.config",
+  "ssd_r50_fpn_640": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase1_ssd_r50_fpn_640.config",
+  "ssd_r101_fpn_640": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase1_ssd_r101_fpn_640.config"
+}

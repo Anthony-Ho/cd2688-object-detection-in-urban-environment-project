@@ -201,53 +201,79 @@ Phase-1 output:
 - ranked architecture leaderboard,
 - selected architecture for Phase-2.
 
-## 8. Phase-2: Data Augmentation Policy Selection
+## 8. Phase-2: Generalization and Configuration Optimization
 
-Phase-2 fixes the architecture chosen in Phase-1 and searches augmentation policies.
+Phase 0-1 experiments show that `eff_d1_res768` begins to overfit after approximately
+5,000–10,000 steps: the train-eval classification loss gap nearly doubles (0.07 → 0.13)
+while mAP plateaus and mAP(small) slightly regresses at 15,000 steps. Classification
+loss accounts for 85–87% of total eval loss, confirming that class discrimination — not
+localization — is the binding constraint. The two levers that address this —
+augmentation policy (which provides implicit regularization) and explicit regularization
+and optimizer settings (weight decay, learning rate) — interact strongly. Treating them
+as independent sequential phases wastes GPU budget and misses that interaction. Phase-2
+therefore combines them into a joint search.
 
-Core work in Phase-2:
+### 8.1 Objectives
 
-- Build a small augmentation policy library:
-  - baseline/minimal policy,
-  - geometry-focused policy (for scale/position robustness),
-  - appearance-focused policy (color/quality disturbance),
-  - mixed policy (geometry + appearance).
-- Keep architecture and base optimizer settings fixed so augmentation impact is isolated.
-- Run controlled local loops for each policy using equal step budgets.
-- Evaluate policy impact primarily on validation `mAP`, with emphasis on `mAP (small)` and generalization stability.
-- Select the augmentation policy that gives the best accuracy/robustness tradeoff without introducing unstable convergence.
+Phase-2 has four objectives, ordered by priority:
 
-Phase-2 output:
+1. **Reduce the generalization gap.** The primary success criterion is narrowing the
+   train-eval eval_loss gap (currently ~0.13 at 15,000 steps) while preserving or
+   improving `mAP (small)`.
 
-- augmentation policy leaderboard,
-- selected augmentation policy for Phase-3.
+2. **Confirm the optimal training budget.** mAP saturated at approximately 5,000–10,000
+   steps in Phase 0-1. Phase-2 must confirm the step count at which eval metrics plateau
+   for the winning architecture under each configuration, and use that as the fixed budget
+   for the confirmation run and final SageMaker training.
 
-## 9. Phase-3: Hyperparameter Optimization (Successive Halving)
+3. **Select an augmentation policy that acts as a regularizer.** Policies are evaluated
+   on their ability to reduce the generalization gap and improve `mAP (small)`, not
+   `mAP` alone.
 
-Phase-3 fixes both architecture and augmentation from prior phases and tunes optimization settings.
+4. **Tune regularization-sensitive hyperparameters.** Specifically: weight decay
+   (L2 regularizer), learning rate base, and warmup fraction — the three settings most
+   likely to interact with augmentation strength at short budgets.
 
-Core work in Phase-3:
+### 8.2 Core Work
 
-- Define a bounded hyperparameter search space (learning rate, warmup, momentum, weight decay, and batch size within GPU memory limits).
-- Run a successive-halving schedule:
-  - short initial runs for all candidates,
-  - promote top performers to larger budgets,
-  - repeat until final survivors remain.
-- Track both quality and training behavior (`mAP`, `mAP (small)`, `AR@100`, `Loss/total_loss`, convergence smoothness).
-- Perform one confirmation run on the final selected configuration.
+Phase-2 fixes the architecture and pretrained checkpoint from the Phase-1 winner and
+applies a joint successive-halving search over a 4×3 configuration grid.
 
-Phase-3 output:
+Augmentation axis (4 policies):
 
-- final hyperparameter set,
-- production-ready local training configuration.
+- **baseline**: `random_horizontal_flip` + `random_scale_crop_and_pad_to_square` (current)
+- **geometry**: baseline + `random_rotation` + `random_pad_image`
+- **appearance**: baseline + `random_distort_color` + `random_jpeg_quality`
+- **mixed**: geometry + appearance combined
 
-The final artifact for SageMaker launch is:
+Regularization/optimizer axis (3 settings):
 
-- `1_model_training/experiments/final/final_pipeline.config`
+- **low-decay**: L2 weight = 4e-5 (current), LR base = 0.08 (current)
+- **mid-decay**: L2 weight = 1e-4, LR base = 0.04
+- **high-decay**: L2 weight = 3e-4, LR base = 0.02
 
-This final config is then used as the launch input for SageMaker training.
+Successive-halving schedule (step budgets aligned to the Phase-1 plateau evidence):
 
-## 10. Reproducibility and Cost Controls
+- Round 1: all 12 combinations × 5,000 steps
+- Round 2: top 4 by score × 10,000 steps
+- Round 3: top 2 by score × 15,000 steps
+
+Primary ranking metric: `score = 0.7 × mAP(small) + 0.3 × mAP`
+
+Tiebreak criterion: smallest train-eval eval_loss gap at the final checkpoint.
+
+One confirmation run (2 independent repeats) is performed on the winning combination.
+
+### 8.3 Phase-2 Output
+
+- Successive-halving leaderboard for all 12 combinations across 3 rounds
+- Selected augmentation policy and regularization/optimizer configuration
+- Confirmed optimal step budget for the winning architecture
+- Final configuration artifact: `experiments/phase2_summary/phase2_winner.config`
+
+This artifact is the direct input to SageMaker final training.
+
+## 9. Reproducibility and Cost Controls
 
 To keep experiments reproducible and budget-aware:
 
@@ -259,12 +285,14 @@ To keep experiments reproducible and budget-aware:
 
 These controls reduce unnecessary compute spend while preserving comparability across experiments.
 
-## 11. Expected Outcome
+## 10. Expected Outcome
 
 This strategy is designed to produce:
 
 - a defensible, data-driven architecture-family shortlist,
-- a selected augmentation policy and tuned hyperparameters,
+- a selected augmentation policy and regularization/optimizer configuration that reduces the observed generalization gap,
 - and a final training config ready for SageMaker execution.
+
+The final artifact is `experiments/phase2_summary/phase2_winner.config`, which is used directly as the SageMaker training input.
 
 The expected net effect is lower cloud cost, better decision quality, and clearer technical justification in the project writeup.
