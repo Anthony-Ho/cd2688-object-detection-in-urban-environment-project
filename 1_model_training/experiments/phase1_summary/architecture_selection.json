@@ -1,0 +1,40 @@
+{
+  "selected_architecture": "eff_d1_anchor_scale2p0_dense",
+  "runner_up": "eff_d1_res768",
+  "winner_map_mean": 0.15740758180618286,
+  "winner_map_small_mean": 0.09466911852359772,
+  "winner_ar100_mean": 0.21177218109369278,
+  "winner_score_mean": 0.11349065750837325,
+  "leaderboard": [
+    {
+      "probe_id": "eff_d1_anchor_scale2p0_dense",
+      "runs_total": 2,
+      "runs_ok": 2,
+      "map_mean": 0.15740758180618286,
+      "map_std": 0.0007256120443344116,
+      "map_small_mean": 0.09466911852359772,
+      "map_small_std": 0.0008738115429878235,
+      "ar100_mean": 0.21177218109369278,
+      "ar100_std": 0.0010484680533409119,
+      "eval_loss_mean": 0.3536435067653656,
+      "eval_loss_std": 0.0005956292152404785,
+      "score_mean": 0.11349065750837325,
+      "score_std": 0.0008293516933917944
+    },
+    {
+      "probe_id": "eff_d1_res768",
+      "runs_total": 2,
+      "runs_ok": 2,
+      "map_mean": 0.16394773125648499,
+      "map_std": 0.0013385862112045288,
+      "map_small_mean": 0.08323722705245018,
+      "map_small_std": 0.0013220123946666718,
+      "ar100_mean": 0.21758493036031723,
+      "ar100_std": 0.0029398277401924133,
+      "eval_loss_mean": 0.2857339084148407,
+      "eval_loss_std": 0.008925527334213257,
+      "score_mean": 0.10745037831366062,
+      "score_std": 0.001326984539628026
+    }
+  ]
+}
