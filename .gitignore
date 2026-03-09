@@ -145,3 +145,4 @@ pipeline.config
 1_model_training/source_dir/checkpoints/
 nohup.out
 .claude/settings.json
+watch_phase1_and_commit.sh
