@@ -141,6 +141,7 @@ pipeline.config
 1_model_training/experiments/phase0_runs/
 1_model_training/source_dir/pipeline.phase0_*.steps_*.config
 1_model_training/experiments/phase1_runs/
+1_model_training/experiments/phase2_runs/
 1_model_training/source_dir/checkpoints/
 nohup.out
 .claude/settings.json

@@ -1,0 +1,10 @@
+{
+  "baseline_low": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase2_baseline_low.config",
+  "baseline_high": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase2_baseline_high.config",
+  "geometry_low": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase2_geometry_low.config",
+  "geometry_high": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase2_geometry_high.config",
+  "appearance_low": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase2_appearance_low.config",
+  "appearance_high": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase2_appearance_high.config",
+  "mixed_low": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase2_mixed_low.config",
+  "mixed_high": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/source_dir/pipeline.phase2_mixed_high.config"
+}
