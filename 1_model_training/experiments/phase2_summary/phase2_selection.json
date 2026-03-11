@@ -1,0 +1,8 @@
+{
+  "winner_combo_id": "baseline_low",
+  "winner_config_path": "/home/wcho/cd2688-object-detection-in-urban-environment-project-1/1_model_training/experiments/phase2_summary/phase2_winner.config",
+  "score_mean": 0.11159627065062523,
+  "map_mean": 0.15397793054580688,
+  "map_small_mean": 0.0934327021241188,
+  "eval_loss_mean": 0.34088027477264404
+}

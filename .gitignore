@@ -146,3 +146,4 @@ pipeline.config
 nohup.out
 .claude/settings.json
 watch_phase1_and_commit.sh
+watch_phase1_and_commit.sh
